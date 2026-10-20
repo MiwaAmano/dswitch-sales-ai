@@ -1,0 +1,27 @@
+export const statuses = ['未接触','メール作成済','送信済','返信あり','商談予定','商談済','契約済','失注'] as const;
+export type Status = typeof statuses[number];
+export type Company = { id:string; name:string; industry:string; location:string; employees:number; website:string; contact:string; priority:'高'|'中'|'低'; status:Status; lastContact:string; nextContact:string; notes:string; history:{id:string;date:string;message:string}[]; draft?:{subject:string;body:string} };
+export const fields = ['企業名','業種','所在地','従業員数','公式サイト','問い合わせ先','営業優先度','営業ステータス','最終連絡日','次回連絡予定日','備考'];
+export const today = () => new Date().toLocaleDateString('sv-SE');
+const day = (offset:number) => {const d=new Date();d.setDate(d.getDate()+offset);return d.toLocaleDateString('sv-SE');};
+export function sampleCompanies():Company[] { return [
+ ['株式会社サンプルテクノロジー','IT・通信','東京都渋谷区',320,'高','商談予定',1],
+ ['サンプルデザイン株式会社','広告・デザイン','大阪府大阪市',85,'高','返信あり',0],
+ ['株式会社サンプルパートナーズ','コンサルティング','愛知県名古屋市',150,'高','契約済',7],
+ ['サンプルクラウド株式会社','IT・通信','福岡県福岡市',210,'中','送信済',-2],
+ ['株式会社サンプルファイナンス','金融・保険','東京都千代田区',560,'高','商談済',2],
+ ['サンプルラボ株式会社','IT・通信','北海道札幌市',45,'中','未接触',5],
+ ['株式会社サンプルメディア','広告・デザイン','神奈川県横浜市',120,'中','メール作成済',3],
+ ['サンプルソリューションズ株式会社','コンサルティング','京都府京都市',70,'低','失注',0],
+ ['株式会社サンプルワークス','IT・通信','宮城県仙台市',95,'中','送信済',1],
+ ['サンプルリンク株式会社','人材・サービス','兵庫県神戸市',180,'高','未接触',4],
+ ['株式会社サンプルネット','IT・通信','広島県広島市',260,'高','契約済',10],
+ ['サンプルアセット株式会社','金融・保険','東京都港区',380,'中','返信あり',2],
+ ].map((r,i)=>({id:`sample-${i}`,name:String(r[0]),industry:String(r[1]),location:String(r[2]),employees:Number(r[3]),website:`https://example.com/company-${i+1}`,contact:`contact-${i+1}@example.com`,priority:r[4] as Company['priority'],status:r[5] as Status,lastContact:i===5||i===9?'':day(-i-1),nextContact:r[5]==='契約済'||r[5]==='失注'?'':day(Number(r[6])),notes:'架空のサンプル企業です。',history:[{id:`seed-${i}`,date:day(-i-1),message:`サンプルデータ登録：${r[5]}`}]})); }
+export function generateMail(c:Company,followup=false) {return {subject:followup?`【再度のご案内】${c.name}様の福利厚生について`:`【福利厚生のご提案】${c.name}様へ｜d switch`,body:`${c.name}\nご担当者様\n\nお世話になっております。株式会社tenの営業担当です。\n${followup?'先日ご案内した福利厚生サービスについて、改めてご連絡いたしました。\n':''}\n${c.industry}業界で事業を展開される貴社の、約${c.employees}名の従業員の皆様に向け、デスクワークの合間のリフレッシュや健康づくりを支える福利厚生をご提案いたします。\n\n「d switch」は株式会社tenの法人向け福利厚生サービスです。貴社の働き方や課題をお伺いし、ご希望に合わせた活用方法をご紹介いたします。\n\nよろしければ、オンラインで20〜30分ほどお話しする機会をいただけますでしょうか。ご都合のよい日時をお知らせいただけますと幸いです。\n\nどうぞよろしくお願いいたします。\n\n株式会社ten\nd switch 営業担当\n※署名・連絡先はご利用前に編集してください。`};}
+export function parseCSV(text:string):string[][] {const rows:string[][]=[];let row:string[]=[],cell='',quoted=false;const s=text.replace(/^\uFEFF/,'');for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'){if(quoted&&s[i+1]==='"'){cell+='"';i++;}else if(!quoted&&cell!=='')throw Error('CSVの引用符が不正です');else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(Boolean))rows.push(row);row=[];cell='';}else cell+=c;}if(quoted)throw Error('CSVの引用符が閉じられていません');row.push(cell);if(row.some(Boolean))rows.push(row);return rows;}
+export function importCSV(text:string):Company[]{const [header,...rows]=parseCSV(text);if(!header||fields.some(f=>!header.includes(f)))throw Error('CSVヘッダーが一致しません。エクスポートしたCSVを雛形にしてください。');return rows.map((row,i)=>{const get=(f:string)=>row[header.indexOf(f)]?.trim()??'';const employees=Number(get('従業員数'));const status=get('営業ステータス'),priority=get('営業優先度');if(!get('企業名')||!Number.isInteger(employees)||employees<0||!statuses.includes(status as Status)||!['高','中','低'].includes(priority))throw Error(`${i+2}行目の企業名・従業員数・優先度・ステータスを確認してください`);for(const f of ['最終連絡日','次回連絡予定日']){const v=get(f);if(v&&(!/^\d{4}-\d{2}-\d{2}$/.test(v)||Number.isNaN(Date.parse(v))||new Date(v).toISOString().slice(0,10)!==v))throw Error(`${i+2}行目の日付はYYYY-MM-DD形式にしてください`);}const website=get('公式サイト');if(website&&!/^https?:\/\//i.test(website))throw Error(`${i+2}行目の公式サイトはhttp(s)形式にしてください`);return {id:crypto.randomUUID(),name:get('企業名'),industry:get('業種'),location:get('所在地'),employees,website,contact:get('問い合わせ先'),priority:priority as Company['priority'],status:status as Status,lastContact:get('最終連絡日'),nextContact:get('次回連絡予定日'),notes:get('備考'),history:[{id:crypto.randomUUID(),date:today(),message:'CSVから登録'}]};});}
+export function exportCSV(companies:Company[]):string {const escape=(v:unknown)=>{let s=String(v??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};return '\uFEFF'+[fields,...companies.map(c=>[c.name,c.industry,c.location,c.employees,c.website,c.contact,c.priority,c.status,c.lastContact,c.nextContact,c.notes])].map(r=>r.map(escape).join(',')).join('\r\n');}
+// Replace this provider with a server-side external search adapter in a future release.
+export interface ResearchProvider { search(filters:{area:string;industry:string;size:string;keyword:string}):Promise<Company[]> }
+export const sampleResearchProvider:ResearchProvider = {async search(f){return sampleCompanies().map(c=>({...c,id:`research-${c.id}`,status:'未接触' as Status,lastContact:'',nextContact:'',history:[]})).filter(c=>(!f.area||c.location.includes(f.area))&&(!f.industry||c.industry===f.industry)&&(!f.keyword||`${c.name}${c.industry}${c.location}`.includes(f.keyword))&&(!f.size||(f.size==='small'?c.employees<100:f.size==='medium'?c.employees>=100&&c.employees<300:c.employees>=300)));}};
