@@ -56,11 +56,12 @@ export function normalizeGbizinfo(base:RecordValue,detail:RecordValue|null,at:st
   const original=record(meta)?record(meta.source)?text(meta.source[field]):text(meta.source):null;
   return {value,source:'gbizinfo',sourceUrl:url,retrievedAt:at,...(original?{upstreamSource:original}:{})};
  };
- const industry=Array.isArray(detail?.industry)?detail.industry.filter((v):v is string=>typeof v==='string'&&Boolean(v.trim())).join(' / '):null;
+ const industryValues=Array.isArray(detail?.industry)?detail.industry.filter((v):v is string=>typeof v==='string'&&Boolean(v.trim())).map(v=>v.trim()):[];
+ const industry=industryValues.join(' / ')||null;
  const employees=detail?.employee_number;
  const location=text(detail?.location)??text(base.location);
  const url=website(detail?.company_url);
- return {id:`gbizinfo-${number}`,identity:{corporateNumber:number,placeId:null},name:e(name,text(detail?.name)?sourceUrl:GBIZINFO_API),address:location?e(location,text(detail?.location)?sourceUrl:GBIZINFO_API,'location'):null,industry:industry?e(industry,sourceUrl,'industry'):null,website:url?e(url,sourceUrl,'company_url'):null,employees:typeof employees==='number'&&Number.isSafeInteger(employees)&&employees>=0?e(employees,sourceUrl,'employee_number'):null,businessSummary:text(detail?.business_summary)?e(text(detail?.business_summary)!,sourceUrl,'business_summary'):null};
+ return {id:`gbizinfo-${number}`,identity:{corporateNumber:number,placeId:null},name:e(name,text(detail?.name)?sourceUrl:GBIZINFO_API),address:location?e(location,text(detail?.location)?sourceUrl:GBIZINFO_API,'location'):null,industry:industry?e(industry,sourceUrl,'industry'):null,industryValues,website:url?e(url,sourceUrl,'company_url'):null,employees:typeof employees==='number'&&Number.isSafeInteger(employees)&&employees>=0?e(employees,sourceUrl,'employee_number'):null,businessSummary:text(detail?.business_summary)?e(text(detail?.business_summary)!,sourceUrl,'business_summary'):null};
 }
 /** No samples, automatic retries, arbitrary URLs or key logging. At most 1+10 requests per page. */
 export async function searchGbizinfo(q:GbizinfoQuery,token:string|undefined,options:{fetcher?:Fetcher;signal?:AbortSignal}={}):Promise<GbizinfoSearchResult>{

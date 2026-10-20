@@ -16,6 +16,7 @@ export type ResearchCandidate = {
   name: Evidence<string>;
   address: Evidence<string> | null;
   industry: Evidence<string> | null;
+  industryValues?: string[];
   website: Evidence<string> | null;
   employees: Evidence<number> | null;
   businessSummary?: Evidence<string> | null;
