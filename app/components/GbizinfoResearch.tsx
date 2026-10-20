@@ -1,0 +1,21 @@
+'use client';
+import {useEffect, useState} from 'react';
+import {Search, ExternalLink, RefreshCw, KeyRound} from 'lucide-react';
+import {prefectures} from '@/lib/prefectures';
+type ConnectionState = { keyConfigured:boolean; documentationVerified:boolean; ready:boolean; message:string };
+export default function GbizinfoResearch(){
+ const [connection,setConnection]=useState<ConnectionState|null>(null);
+ const [query,setQuery]=useState({keyword:'',area:'',industry:''});
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[checking,setChecking]=useState(false);
+ async function check(){setChecking(true);setMessage('');try{const response=await fetch('/api/research/gbizinfo',{cache:'no-store'});if(!response.ok)throw Error('接続状態を確認できません。アプリを再起動して再確認してください。');setConnection(await response.json());}catch(e){setConnection(null);setMessage(e instanceof Error?e.message:'接続状態を取得できません。');}finally{setChecking(false);}}
+ useEffect(()=>{void check()},[]);
+ return <>
+ <div className="info-banner"><KeyRound size={20}/><div><strong>gBizINFO実在企業検索</strong><p style={{marginTop:6}}>この画面はサンプルデータを使いません。実APIの確認と設定が完了するまで検索結果は表示しません。</p></div></div>
+ <section className="panel research-panel" aria-label="gBizINFO接続状態"><div className="panel-heading" style={{padding:0,marginBottom:18}}><h2>接続状態</h2><button className="secondary" onClick={check} disabled={checking}><RefreshCw size={15}/>{checking?'確認中…':'接続状態を再確認'}</button></div>
+ {connection?<><p style={{lineHeight:1.9}} role="status">{connection.message}</p><p className="muted" style={{marginTop:12}}>APIキー：{connection.keyConfigured?'設定あり（有効性は未検証）':'未設定'} ／ 公式仕様・利用条件：{connection.documentationVerified?'確認済み':'確認待ち'}</p></>:<p role="status">{checking?'接続状態を確認しています…':'接続状態を取得できていません。再確認してください。'}</p>}
+ </section>
+ <section className="panel research-panel"><h2>検索条件</h2><form onSubmit={async e=>{e.preventDefault();setBusy(true);setMessage('');try{const res=await fetch('/api/research/gbizinfo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(query)});const result=await res.json();if(!res.ok){setMessage(result.message||'検索できませんでした。設定を確認してください。');return;}setMessage('実データ検索の接続確認が必要です。サンプルデータは表示しません。');}catch{setMessage('サーバーに接続できません。起動状態を確認してください。');}finally{setBusy(false)}}}><div className="form-grid"><label>エリア<select value={query.area} onChange={e=>setQuery({...query,area:e.target.value})}><option value="">全国</option>{prefectures.map(p=><option key={p}>{p}</option>)}</select></label><label>業種キーワード<input maxLength={100} placeholder="例：情報通信業（対応条件は仕様確認待ち）" value={query.industry} onChange={e=>setQuery({...query,industry:e.target.value})}/></label><label>企業名・キーワード<input maxLength={100} placeholder="例：企業名の一部" value={query.keyword} onChange={e=>setQuery({...query,keyword:e.target.value})}/></label></div><p className="muted" style={{margin:'16px 0',lineHeight:1.8}}>検索条件は準備できます。全国検索は全法人の一括取得ではありません。業種・公式サイト・従業員数の取得可否と条件の対応範囲は、公式仕様の確認後に確定します。</p><button className="primary" disabled={busy||checking||!connection}><Search size={16}/>{busy?'接続確認中…':connection?.ready?'企業を検索':'検索できない理由を確認'}</button></form>
+ {message&&<div className="warning" role="alert" style={{marginTop:18,marginBottom:0}}>{message}</div>}</section>
+ <section className="panel research-panel"><h2>APIキーの設定方法（Windows）</h2><ol style={{paddingLeft:22,lineHeight:2.1,margin:'15px 0',fontSize:12}}><li><a href="https://info.gbiz.go.jp/" target="_blank" rel="noreferrer">gBizINFO公式サイト <ExternalLink size={12} style={{display:'inline'}}/></a>のAPI利用案内から、現在の申請方法・料金・利用条件を確認してください。まだこの環境では最新資料を取得できていません。</li><li>申請が必要な場合は公式の案内に従ってください。発行されたキーはチャットやGitHubに貼らないでください。</li><li><code>package.json</code>と同じフォルダーに<code>.env.local</code>を作成します。既存ファイルがある場合は消さずに追記してください。</li><li>下の行の右側を、ご自身のキーに置き換えて保存します。<code>NEXT_PUBLIC_</code>は付けません。</li><li>起動中のターミナルでCtrl+Cを押し、<code>npm.cmd run dev -- --hostname 127.0.0.1</code>で再起動します。</li><li>この画面の「接続状態を再確認」を押します。キー設定後も「仕様確認待ち」の間は外部APIを呼び出しません。</li></ol><pre style={{padding:15,borderRadius:6,background:'#f7f8fb',overflowX:'auto'}}>GBIZINFO_API_TOKEN=ここをご自身のキーに置き換える</pre><p className="muted" style={{marginTop:15,lineHeight:1.9}}>メモ帳では「ファイルの種類」を「すべてのファイル」にし、.env.local.txtになっていないことを確認してください。キーを設定する前に、公式の利用条件と費用を確認してください。Google Placesとの接続は保留中です。</p></section>
+ </>;
+}
