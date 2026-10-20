@@ -1,0 +1,8 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {sampleCompanies,generateMail,exportCSV,importCSV,parseCSV,sampleResearchProvider} from '../lib/sales';
+test('CSV round trip preserves Japanese, commas, quotes and newlines',()=>{const c=sampleCompanies()[0];c.notes='ご担当者, "田中"\n次回ご連絡';const restored=importCSV(exportCSV([c]));assert.equal(restored[0].name,c.name);assert.equal(restored[0].notes,c.notes);assert.equal(restored[0].employees,c.employees);});
+test('CSV validation rejects broken quotes, invalid status and dates',()=>{assert.throws(()=>parseCSV('"abc'));const csv=exportCSV([sampleCompanies()[0]]);assert.throws(()=>importCSV(csv.replace('商談予定','不明')));assert.throws(()=>importCSV(csv.replace(/\d{4}-\d{2}-\d{2}/,'2026-02-30')));assert.throws(()=>importCSV('企業名\nテスト'));});
+test('spreadsheet formulas are neutralized',()=>{const c=sampleCompanies()[0];c.notes='=HYPERLINK("bad")';assert.ok(exportCSV([c]).includes("'=HYPERLINK"));});
+test('mail contains company specific proposal and followup',()=>{const c=sampleCompanies()[0],m=generateMail(c);assert.ok(m.body.includes(c.name));assert.ok(m.body.includes(c.industry));assert.ok(m.body.includes(String(c.employees)));assert.ok(m.body.includes('d switch'));assert.ok(m.body.includes('株式会社ten'));assert.ok(generateMail(c,true).subject.includes('再度'));});
+test('research combines region, industry, headcount and keyword filters',async()=>{const rows=await sampleResearchProvider.search({area:'東京都',industry:'IT・通信',size:'large',keyword:'テクノロジー'});assert.equal(rows.length,1);assert.equal(rows[0].status,'未接触');assert.deepEqual(await sampleResearchProvider.search({area:'沖縄県',industry:'',size:'',keyword:''}),[]);});
