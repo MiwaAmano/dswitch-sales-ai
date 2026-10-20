@@ -85,3 +85,12 @@ export async function searchGbizinfo(q:GbizinfoQuery,token:string|undefined,opti
  if(needle)warnings.push('業種条件は、このページで取得した業種・事業概要の部分一致です。全国の全法人への業種検索ではありません。情報がない企業は一致に含めません。');
  return {candidates:filtered,page:q.page,hasNextPage:raw.length===PAGE_SIZE&&q.page<MAX_PAGE,scannedCount:raw.length,detailFailures,warnings,fetchedAt:at};
 }
+
+/** One explicit, user-initiated lookup. Used by bounded CSV enrichment. */
+export async function getGbizinfoCompany(number:string,token:string|undefined,options:{fetcher?:Fetcher;signal?:AbortSignal}={}){
+ if(!/^\d{13}$/.test(number))throw new GbizinfoError('INVALID_QUERY','法人番号は13桁で指定してください。',400);
+ const key=token?.trim();if(!key)throw new GbizinfoError('KEY_MISSING',getGbizinfoReadiness(token).message,503);
+ if(/[^\x21-\x7e]/.test(key))throw new GbizinfoError('TOKEN_FORMAT','トークンの形式を確認してください。',400);
+ const timeout=AbortSignal.timeout(15000),signal=options.signal?AbortSignal.any([timeout,options.signal]):timeout;
+ const rows=await api(new URL(`${GBIZINFO_API}/${number}?metadata_flg=true`),key,options.fetcher??fetch,signal);const row=rows.find(r=>r.corporate_number===number);if(!row)throw new GbizinfoError('NOT_FOUND','指定された法人の詳細が返されませんでした。',404);return normalizeGbizinfo(row,row,new Date().toISOString());
+}

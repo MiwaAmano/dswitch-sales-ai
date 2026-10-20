@@ -7,7 +7,7 @@ export function describeIndustry(candidate:ResearchCandidate){
  const raw=candidate.industryValues??(candidate.industry?.value?candidate.industry.value.split(' / '):[]);
  const labels=raw.filter(v=>/[\u3040-\u30ff\u3400-\u9fff]/u.test(v));
  const unknownCodes=raw.filter(v=>!labels.includes(v));
- return {labels,unknownCodes,display:[...labels,...(unknownCodes.length?[`業種未確認（コード：${unknownCodes.join(' / ')}）`]:[])].join(' / ')||'業種未確認',basis:labels.length?'APIが返した日本語表記（コードの独自変換なし）':'公式のコード定義を未確認のため変換・業種加点なし'};
+ return {labels,unknownCodes,display:[...labels,...(unknownCodes.length?[`業種未確認（コード：${unknownCodes.join(' / ')}）`]:[])].join(' / ')||'業種未確認',basis:labels.length?'取得した日本語表記（コードの独自変換なし）':'公式のコード定義を未確認のため変換・業種加点なし'};
 }
 export const SCORE_VERSION='dswitch-office-snacks-v1';
 export type SalesRank='A'|'B'|'C';
@@ -27,12 +27,12 @@ export function scoreCandidate(candidate:ResearchCandidate):SalesScore{
  let employeePoints=0,employeeReason='従業員数が不明のため加点なし';
  if(isKnownEmployees(n)){
   employeePoints=n===0?0:n<10?10:n<20?22:n<300?30:n<1000?22:15;
-  employeeReason=`API取得の従業員数${n.toLocaleString()}名：${employeePoints}点（人数帯による試作の優先順位）`;
+  employeeReason=`取得済みの従業員数${n.toLocaleString()}名：${employeePoints}点（人数帯による試作の優先順位）`;
  }
  const summary=candidate.businessSummary?.value??'',matches=businessWords.filter(w=>summary.normalize('NFKC').includes(w));
  const known=[['企業名',Boolean(candidate.name.value.trim())],['所在地',Boolean(candidate.address?.value.trim())],['業種名',industry.labels.length>0],['従業員数',isKnownEmployees(n)],['公式サイト',Boolean(candidate.website?.value)]] as const;
  const parts:ScorePart[]=[
-  {key:'industry',label:'業種の親和性',points:industryPoints,max:35,reason:high||medium?`APIの業種表記「${high??medium}」が対象業種ルールに一致。実際の働き方は未確認`:industry.labels.length?'取得した業種名は対象ルールに一致しないため加点なし':'業種未確認のため加点なし',missing:!industry.labels.length},
+  {key:'industry',label:'業種の親和性',points:industryPoints,max:35,reason:high||medium?`取得した業種表記「${high??medium}」が対象業種ルールに一致。実際の働き方は未確認`:industry.labels.length?'取得した業種名は対象ルールに一致しないため加点なし':'業種未確認のため加点なし',missing:!industry.labels.length},
   {key:'employees',label:'従業員規模',points:employeePoints,max:30,reason:employeeReason,missing:!isKnownEmployees(n)},
   {key:'business',label:'事業内容の親和性',points:Math.min(matches.length*10,20),max:20,reason:summary?matches.length?`取得した事業概要に「${matches.join('」「')}」を含む（1語10点、上限20点）。文脈・働き方は未確認`:'取得した事業概要に対象語がないため加点なし':'事業概要が未取得のため加点なし',missing:!summary},
   {key:'completeness',label:'企業情報の充実度',points:known.filter(([,ok])=>ok).length*3,max:15,reason:`各3点：${known.map(([name,ok])=>`${name}${ok?'あり':'未確認'}`).join('・')}`,missing:known.some(([,ok])=>!ok)},

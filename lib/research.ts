@@ -2,13 +2,14 @@
  * Unknown headcount must never silently become 0 or enter outbound templates.
  * No network requests or credentials belong in this client-safe module.
  */
-export type ResearchSource = 'gbizinfo' | 'google-places' | 'company-website' | 'manual';
+export type ResearchSource = 'gbizinfo' | 'gbizinfo-download' | 'google-places' | 'company-website' | 'manual';
 export type Evidence<T> = {
   value: T;
   source: ResearchSource;
   sourceUrl: string;
   retrievedAt: string;
   upstreamSource?: string;
+  sourceFileName?: string;
 };
 export type ResearchCandidate = {
   id: string;
@@ -20,6 +21,7 @@ export type ResearchCandidate = {
   website: Evidence<string> | null;
   employees: Evidence<number> | null;
   businessSummary?: Evidence<string> | null;
+  dataConflicts?: {field:string;previous:Evidence<string|number>;kept:Evidence<string|number>}[];
 };
 export type RealResearchFilters = { area: string | null; industry: string | null; keyword: string; limit: number };
 /** A production adapter must run on the server, after its current terms are reviewed. */
