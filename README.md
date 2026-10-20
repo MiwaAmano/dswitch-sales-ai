@@ -65,3 +65,20 @@ git push -u origin feature/dswitch-sales-ai
 ```
 
 GitHubの画面で表示される「Compare & pull request」からmain向けのプルリクエストを作成します。依存関係やビルド出力、秘密情報は.gitignoreで除外します。
+
+## ロゴとWindowsでの更新
+
+公式ロゴは、GitHubへアップロードされた元画像を加工せず `public/dswitch-logo.png` に配置しています。縦横比を保って縮小し、白背景の下にグレーの「Sales AI」を表示します。ファビコンは同じ画像を白い正方形のSVG内に比率を保って配置しています。元画像は199×280pxのため、拡大せず使用しています。
+
+WindowsでGitを使っている場合は、起動中のターミナルでCtrl+Cを押し、プロジェクトフォルダーで次を実行してください。ローカルでファイルを変更している場合は、その変更を先に保存し、強制上書きやリセットはしないでください。
+
+```powershell
+git switch feature/dswitch-sales-ai
+git pull --ff-only origin feature/dswitch-sales-ai
+npm.cmd ci
+npm.cmd run dev -- --hostname 127.0.0.1
+```
+
+ZIPで取得した場合は、GitHubで `feature/dswitch-sales-ai` ブランチを開き、Code → Download ZIPから再ダウンロードしてください。既存フォルダーは残して別の場所へ展開し、package.jsonがあるフォルダーで「ターミナルで開く」を選び、`npm.cmd ci`、`npm.cmd run dev -- --hostname 127.0.0.1` を順に実行します。以前のサーバーはCtrl+Cで停止してから起動してください。
+
+ブラウザーは同じ端末・同じブラウザー・同じアドレスで開き、Ctrl+F5で再読み込みしてください。保存済み営業データを保つためサイトデータは削除しないでください。念のため更新前のCSVエクスポートも利用できます（CSVには履歴・下書きは含まれません）。ファビコンが古い場合はタブを閉じて開き直してください。
