@@ -1,6 +1,6 @@
 # 実在企業リサーチ連携案
 
-状態：最新の進捗は [gBizINFO接続ガイド](gbizinfo-setup.md) を参照。画面はgBizINFOの接続確認・設定案内に切り替え済み。公式資料確認待ちのため実API通信は停止し、サンプル結果も表示しません。以下は当初の比較・設計案です。Google Placesの接続は保留中です。
+状態：以下は初期検討の記録です。現在はgBizINFO API v2の接続コード・画面・営業登録を実装済み。最新の進捗と検証限界は [Windows接続ガイド](gbizinfo-setup.md) を参照してください。Google Placesは保留中です。
 
 ## 現状
 

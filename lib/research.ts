@@ -8,6 +8,7 @@ export type Evidence<T> = {
   source: ResearchSource;
   sourceUrl: string;
   retrievedAt: string;
+  upstreamSource?: string;
 };
 export type ResearchCandidate = {
   id: string;
@@ -17,6 +18,7 @@ export type ResearchCandidate = {
   industry: Evidence<string> | null;
   website: Evidence<string> | null;
   employees: Evidence<number> | null;
+  businessSummary?: Evidence<string> | null;
 };
 export type RealResearchFilters = { area: string | null; industry: string | null; keyword: string; limit: number };
 /** A production adapter must run on the server, after its current terms are reviewed. */
@@ -62,7 +64,7 @@ export type StorageReview = {
  * Saving a place ID alone needs a separate ID-only model, not a Company snapshot.
  */
 export function checkPersistence(candidate: ResearchCandidate, reviews: readonly StorageReview[]): { allowed: boolean; reasons: string[] } {
-  const evidence = [candidate.name, candidate.address, candidate.industry, candidate.website, candidate.employees].filter((e): e is Evidence<string> | Evidence<number> => e !== null);
+  const evidence = [candidate.name, candidate.address, candidate.industry, candidate.website, candidate.employees, candidate.businessSummary??null].filter((e): e is Evidence<string> | Evidence<number> => e !== null);
   const reasons: string[] = [];
   for (const e of evidence) {
     if (!e.sourceUrl || !validHttpsUrl(e.sourceUrl) || !Number.isFinite(Date.parse(e.retrievedAt))) reasons.push('出典URLまたは取得日時が未確認です');
